@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { VideoPlayer } from "@/components/VideoPlayer";
+import { TtsEngine } from "@/components/TtsEngine";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -103,32 +103,20 @@ export default async function WatchPage({
 			<Header videoId={videoId} />
 
 			<main className="flex-1 flex flex-col lg:flex-row gap-0">
-				{/* Left column: video + controls */}
+				{/* Left column: video + TTS engine */}
 				<section className="flex-1 flex flex-col gap-4 p-4 lg:p-6 min-w-0">
-					{/* Video player — muted YouTube IFrame */}
-					<VideoPlayer
-						videoId={videoId}
-						onTimeUpdate={(t) => {
-							// Will be wired to the audio scheduler in Phase 4
-							void t;
-						}}
-						onPlay={() => {
-							// Will trigger audio resume in Phase 4
-						}}
-						onPause={() => {
-							// Will trigger audio pause in Phase 4
-						}}
-						onSeek={(t) => {
-							// Will trigger audio reschedule in Phase 4
-							void t;
-						}}
-					/>
+					{/*
+					 * TtsEngine owns the full pipeline:
+					 * VideoPlayer (muted IFrame) + LoadingOverlay + AudioScheduler wiring.
+					 * Playback triggers model download on first play press.
+					 */}
+					<TtsEngine videoId={videoId} segments={segments} />
 
-					{/* Status bar — placeholder until TTS engine is wired */}
+					{/* Info bar */}
 					<div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3">
-						<div className="size-2 rounded-full bg-muted-foreground animate-pulse" />
+						<div className="size-2 rounded-full bg-primary animate-pulse" />
 						<span className="text-xs text-muted-foreground">
-							AI voice engine loading… (Phase 4)
+							Press play to load the AI voice · audio generates in your browser
 						</span>
 						<span className="ml-auto text-xs text-muted-foreground font-mono">
 							{segments.length} segments
@@ -156,7 +144,7 @@ export default async function WatchPage({
 }
 
 // ---------------------------------------------------------------------------
-// Sub-components (RSC — no client interactivity yet; seek will be wired in Phase 5)
+// Sub-components (RSC)
 // ---------------------------------------------------------------------------
 
 function Header({ videoId }: { videoId?: string }) {

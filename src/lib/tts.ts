@@ -73,12 +73,15 @@ export async function generateSegmentAudio(
 	ctx: AudioContext,
 	voice: string = DEFAULT_VOICE,
 ): Promise<AudioBuffer> {
-	const raw = await tts.generate(text, { voice: voice as Parameters<KokoroTTS["generate"]>[1]["voice"] });
+	// The GenerateOptions type from kokoro-js uses a specific voice union — cast through unknown
+	const raw = await tts.generate(text, { voice: voice } as Parameters<typeof tts.generate>[1]);
 
-	// raw.audio  → Float32Array of PCM samples (mono)
+	// raw.audio  → Float32Array of PCM samples (mono, may use SharedArrayBuffer internally)
 	// raw.sampling_rate → typically 24000 Hz for Kokoro
-	const buffer = ctx.createBuffer(1, raw.audio.length, raw.sampling_rate);
-	buffer.copyToChannel(raw.audio, 0);
+	// Copy into a plain Float32Array to satisfy AudioBuffer.copyToChannel's ArrayBuffer constraint
+	const pcm = new Float32Array(raw.audio);
+	const buffer = ctx.createBuffer(1, pcm.length, raw.sampling_rate);
+	buffer.copyToChannel(pcm, 0);
 	return buffer;
 }
 
