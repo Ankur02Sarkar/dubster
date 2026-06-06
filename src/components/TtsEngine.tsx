@@ -30,19 +30,20 @@ interface TtsEngineProps {
  */
 export const TtsEngine = forwardRef<TtsEngineHandle, TtsEngineProps>(
 	function TtsEngine({ videoId, segments, onTimeUpdate, className }, ref) {
-		const {
-			status,
-			loadProgress,
-			generatedCount,
-			totalCount,
-			error,
-			start,
-			reschedule,
-			suspend,
-			resume,
-			destroy,
-			seekPlayerTo,
-		} = useTtsEngine();
+	const {
+		status,
+		loadProgress,
+		generatedCount,
+		totalCount,
+		error,
+		start,
+		reschedule,
+		seekPlayerTo,
+		registerPlayer,
+		suspend,
+		resume,
+		destroy,
+	} = useTtsEngine();
 
 		// Tear down the AudioContext when the component unmounts (route change)
 		useEffect(() => {
@@ -108,6 +109,7 @@ export const TtsEngine = forwardRef<TtsEngineHandle, TtsEngineProps>(
 				<VideoPlayer
 					videoId={videoId}
 					onTimeUpdate={onTimeUpdate}
+					onPlayerReady={registerPlayer}
 					onPlay={() => void handlePlay()}
 					onPause={() => void handlePause()}
 					onSeek={handleSeek}

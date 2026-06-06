@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { TtsEngine } from "@/components/TtsEngine";
+import { WatchClient } from "@/components/WatchClient";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -102,42 +102,12 @@ export default async function WatchPage({
 		<div className="min-h-screen flex flex-col">
 			<Header videoId={videoId} />
 
-			<main className="flex-1 flex flex-col lg:flex-row gap-0">
-				{/* Left column: video + TTS engine */}
-				<section className="flex-1 flex flex-col gap-4 p-4 lg:p-6 min-w-0">
-					{/*
-					 * TtsEngine owns the full pipeline:
-					 * VideoPlayer (muted IFrame) + LoadingOverlay + AudioScheduler wiring.
-					 * Playback triggers model download on first play press.
-					 */}
-					<TtsEngine videoId={videoId} segments={segments} />
-
-					{/* Info bar */}
-					<div className="flex items-center gap-3 rounded-xl border border-border bg-card px-4 py-3">
-						<div className="size-2 rounded-full bg-primary animate-pulse" />
-						<span className="text-xs text-muted-foreground">
-							Press play to load the AI voice · audio generates in your browser
-						</span>
-						<span className="ml-auto text-xs text-muted-foreground font-mono">
-							{segments.length} segments
-						</span>
-					</div>
-				</section>
-
-				{/* Right column: transcript panel */}
-				<aside className="lg:w-80 xl:w-96 border-t lg:border-t-0 lg:border-l border-border flex flex-col">
-					<div className="px-4 py-3 border-b border-border">
-						<h2 className="text-sm font-semibold">Transcript</h2>
-						<p className="text-xs text-muted-foreground mt-0.5">
-							{segments.length} segments · click to seek
-						</p>
-					</div>
-					<div className="flex-1 overflow-y-auto p-2">
-						{segments.map((seg, i) => (
-							<TranscriptSegmentRow key={i} segment={seg} index={i} />
-						))}
-					</div>
-				</aside>
+			<main className="flex-1 flex flex-col lg:flex-row gap-0 overflow-hidden" style={{ height: "calc(100vh - 49px)" }}>
+				{/*
+				 * WatchClient is the client shell that owns shared currentTime state
+				 * and wires TtsEngine ↔ TranscriptPanel together.
+				 */}
+				<WatchClient videoId={videoId} segments={segments} />
 			</main>
 		</div>
 	);
