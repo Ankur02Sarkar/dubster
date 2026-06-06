@@ -6,6 +6,7 @@
 *Phase 2: transcript route.ts (nodejs runtime, full error codes), lib/youtube.ts (IFrame API loader), hooks/useYouTubePlayer.ts (100ms polling, seek detection), VideoPlayer.tsx (muted embed, state events), watch/[videoId]/page.tsx (server transcript fetch, transcript panel RSC), @types/youtube added to tsconfig*
 *Phase 3: kokoro-js installed, lib/tts.ts (Kokoro init + generateSegmentAudio, SharedArrayBuffer fix), lib/audio-scheduler.ts (AudioScheduler class + singleton, scheduleFrom/cancelAll/suspend/resume), hooks/useTtsEngine.ts (full pipeline state machine), LoadingOverlay.tsx (progress bar + error state), TtsEngine.tsx (orchestrator, wires VideoPlayer events to scheduler), watch page updated to use TtsEngine*
 *Phase 4: TranscriptPanel.tsx (active segment highlight via currentTime, smooth auto-scroll with user-scroll suppression, click-to-seek), WatchClient.tsx (client state shell owning currentTime, wires TtsEngine ref ↔ TranscriptPanel), TtsEngineHandle (forwardRef + useImperativeHandle seekTo), VideoPlayer onPlayerReady callback, useTtsEngine registerPlayer/seekPlayerTo, watch page delegated to WatchClient*
+*Phase 5: Error states polished (per-code hints for DISABLED/NO_CAPTIONS/NO_EN_CAPTIONS/UNAVAILABLE/RATE_LIMITED, icon SVG, primary CTA button), mobile-responsive watch page (transcript as bottom-drawer on mobile, backdrop, drag handle, auto-close on seek), dynamic info bar (STATUS_LABEL/STATUS_DOT maps, live TtsStatus bubbled via onStatusChange), viewport-filling layout (h-screen, min-h-0 overflow-hidden chain)*
 
 ---
 

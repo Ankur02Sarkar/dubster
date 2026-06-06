@@ -12,8 +12,8 @@ AI video dubbing that runs entirely in your browser. Paste a YouTube URL — Dub
 | **Phase 2** | Transcript proxy route, YouTube IFrame lib/hook, VideoPlayer, watch page RSC | ✅ Done |
 | **Phase 3** | Kokoro TTS lib, AudioScheduler, useTtsEngine hook, LoadingOverlay, TtsEngine wiring | ✅ Done |
 | **Phase 4** | TranscriptPanel (active highlight, auto-scroll, click-to-seek), WatchClient state shell | ✅ Done |
-| **Phase 5** | Error states polish, mobile responsive layout, loading skeletons | 🔲 Next |
-| **Phase 6** | Deploy to Cloudflare, OG image, production hardening | 🔲 Pending |
+| **Phase 5** | Error states (per-code hints), mobile drawer transcript, dynamic info bar, viewport layout | ✅ Done |
+| **Phase 6** | Deploy to Cloudflare, OG image, production hardening | 🔲 Next |
 
 ---
 
