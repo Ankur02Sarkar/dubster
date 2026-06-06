@@ -1,15 +1,22 @@
 "use client";
 
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useImperativeHandle, forwardRef } from "react";
 import { useTtsEngine } from "@/hooks/useTtsEngine";
 import { LoadingOverlay } from "@/components/LoadingOverlay";
 import { VideoPlayer } from "@/components/VideoPlayer";
 import { cn } from "@/lib/utils";
 import type { TranscriptSegment } from "@/app/watch/[videoId]/page";
 
+export interface TtsEngineHandle {
+	/** Seek the YouTube player to the given time and reschedule audio */
+	seekTo: (seconds: number) => void;
+}
+
 interface TtsEngineProps {
 	videoId: string;
 	segments: TranscriptSegment[];
+	/** Called on every 100ms time poll — use to sync TranscriptPanel */
+	onTimeUpdate?: (currentTimeSeconds: number) => void;
 	className?: string;
 }
 
@@ -19,89 +26,105 @@ interface TtsEngineProps {
  * - Shows LoadingOverlay while the Kokoro model downloads / audio generates
  * - Wires VideoPlayer play/pause/seek events to the AudioScheduler
  *
- * This is a Client Component — it owns all browser-side state.
+ * Exposes a `TtsEngineHandle` ref so the parent can imperatively seek.
  */
-export function TtsEngine({ videoId, segments, className }: TtsEngineProps) {
-	const {
-		status,
-		loadProgress,
-		generatedCount,
-		totalCount,
-		error,
-		start,
-		reschedule,
-		suspend,
-		resume,
-		destroy,
-	} = useTtsEngine();
+export const TtsEngine = forwardRef<TtsEngineHandle, TtsEngineProps>(
+	function TtsEngine({ videoId, segments, onTimeUpdate, className }, ref) {
+		const {
+			status,
+			loadProgress,
+			generatedCount,
+			totalCount,
+			error,
+			start,
+			reschedule,
+			suspend,
+			resume,
+			destroy,
+			seekPlayerTo,
+		} = useTtsEngine();
 
-	// Tear down the AudioContext when the component unmounts (route change)
-	useEffect(() => {
-		return () => {
-			void destroy();
-		};
-	}, [destroy]);
+		// Tear down the AudioContext when the component unmounts (route change)
+		useEffect(() => {
+			return () => {
+				void destroy();
+			};
+		}, [destroy]);
 
-	// -------------------------------------------------------------------------
-	// VideoPlayer event handlers
-	// -------------------------------------------------------------------------
+		// Expose seekTo imperatively so the parent (WatchClient) can call it
+		// from TranscriptPanel click events.
+		useImperativeHandle(
+			ref,
+			() => ({
+				seekTo(seconds: number) {
+					seekPlayerTo(seconds);
+					reschedule(seconds, segments);
+				},
+			}),
+			[seekPlayerTo, reschedule, segments],
+		);
 
-	const handlePlay = useCallback(async () => {
-		if (status === "idle") {
-			// First play — kick off model load + audio generation.
-			// This is inside a user gesture (the play button click), which is
-			// required for AudioContext creation in browsers.
-			await start(segments);
-		} else if (status === "ready" || status === "generating") {
-			await resume();
-		}
-	}, [status, start, segments, resume]);
+		// -------------------------------------------------------------------------
+		// VideoPlayer event handlers
+		// -------------------------------------------------------------------------
 
-	const handlePause = useCallback(async () => {
-		await suspend();
-	}, [suspend]);
-
-	const handleSeek = useCallback(
-		(newTimeSeconds: number) => {
-			if (status === "ready" || status === "generating") {
-				reschedule(newTimeSeconds, segments);
+		const handlePlay = useCallback(async () => {
+			if (status === "idle") {
+				// First play — kick off model load + audio generation.
+				// Must be inside a user-gesture (play button click) for AudioContext.
+				await start(segments);
+			} else if (status === "ready" || status === "generating") {
+				await resume();
 			}
-		},
-		[status, reschedule, segments],
-	);
+		}, [status, start, segments, resume]);
 
-	const handleEnded = useCallback(async () => {
-		await suspend();
-	}, [suspend]);
+		const handlePause = useCallback(async () => {
+			await suspend();
+		}, [suspend]);
 
-	const handleRetry = useCallback(() => {
-		void start(segments);
-	}, [start, segments]);
+		const handleSeek = useCallback(
+			(newTimeSeconds: number) => {
+				if (status === "ready" || status === "generating") {
+					reschedule(newTimeSeconds, segments);
+				}
+			},
+			[status, reschedule, segments],
+		);
 
-	// -------------------------------------------------------------------------
-	// Render
-	// -------------------------------------------------------------------------
+		const handleEnded = useCallback(async () => {
+			await suspend();
+		}, [suspend]);
 
-	return (
-		<div className={cn("relative w-full", className)}>
-			<VideoPlayer
-				videoId={videoId}
-				onPlay={() => void handlePlay()}
-				onPause={() => void handlePause()}
-				onSeek={handleSeek}
-				onEnded={() => void handleEnded()}
-			/>
+		const handleRetry = useCallback(() => {
+			void start(segments);
+		}, [start, segments]);
 
-			{/* Overlay rendered on top of the video while loading/generating */}
-			<LoadingOverlay
-				status={status}
-				loadProgress={loadProgress}
-				generatedCount={generatedCount}
-				totalCount={totalCount}
-				error={error}
-				onRetry={handleRetry}
-				className="rounded-xl"
-			/>
-		</div>
-	);
-}
+		// -------------------------------------------------------------------------
+		// Render
+		// -------------------------------------------------------------------------
+
+		return (
+			<div className={cn("relative w-full", className)}>
+				<VideoPlayer
+					videoId={videoId}
+					onTimeUpdate={onTimeUpdate}
+					onPlay={() => void handlePlay()}
+					onPause={() => void handlePause()}
+					onSeek={handleSeek}
+					onEnded={() => void handleEnded()}
+				/>
+
+				{/* Overlay rendered on top of the video while loading/generating */}
+				<LoadingOverlay
+					status={status}
+					loadProgress={loadProgress}
+					generatedCount={generatedCount}
+					totalCount={totalCount}
+					error={error}
+					onRetry={handleRetry}
+					className="rounded-xl"
+				/>
+			</div>
+		);
+	},
+);
