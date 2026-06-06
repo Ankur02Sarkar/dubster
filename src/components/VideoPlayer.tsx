@@ -30,6 +30,11 @@ export interface VideoPlayerProps {
 	 * The audio scheduler should cancel and reschedule from `newTimeSeconds`.
 	 */
 	onSeek?: (newTimeSeconds: number) => void;
+	/**
+	 * Called once the YT.Player instance is ready.
+	 * Use this to register the player for imperative seeking from outside.
+	 */
+	onPlayerReady?: (player: YT.Player) => void;
 	className?: string;
 }
 
@@ -51,12 +56,21 @@ export function VideoPlayer({
 	onPause,
 	onEnded,
 	onSeek,
+	onPlayerReady,
 	className,
 }: VideoPlayerProps) {
 	const { isReady, playerState, currentTime, playerRef } = useYouTubePlayer(
 		videoId,
 		PLAYER_ELEMENT_ID,
 	);
+
+	// Notify parent once the player instance is ready for imperative control
+	useEffect(() => {
+		if (isReady && playerRef.current) {
+			onPlayerReady?.(playerRef.current);
+		}
+	// eslint-disable-next-line react-hooks/exhaustive-deps
+	}, [isReady]);
 
 	// Track the previous current time to detect seeks
 	const prevTimeRef = useRef<number>(0);

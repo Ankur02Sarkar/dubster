@@ -31,9 +31,15 @@ export interface UseTtsEngineReturn {
 	start: (segments: TranscriptSegment[]) => Promise<void>;
 	/**
 	 * Re-schedule audio from a new video position (call on seek events).
-	 * Requires status === "ready".
 	 */
 	reschedule: (videoCurrentTimeSeconds: number, segments: TranscriptSegment[]) => void;
+	/**
+	 * Seek the YouTube player to the given time.
+	 * The caller must also call reschedule() afterward if audio is active.
+	 */
+	seekPlayerTo: (seconds: number) => void;
+	/** Register the YT.Player instance so seekPlayerTo() can call it */
+	registerPlayer: (player: YT.Player | null) => void;
 	/** Suspend audio (call on video pause/buffer) */
 	suspend: () => Promise<void>;
 	/** Resume audio (call on video play) */
@@ -50,7 +56,6 @@ export interface UseTtsEngineReturn {
  */
 export function useTtsEngine(): UseTtsEngineReturn {
 	const [status, setStatus] = useState<TtsStatus>(() =>
-		// Skip loading screen if the model is already in memory (same-session revisit)
 		isTTSReady() ? "idle" : "idle",
 	);
 	const [loadProgress, setLoadProgress] = useState(0);
@@ -62,6 +67,16 @@ export function useTtsEngine(): UseTtsEngineReturn {
 	const ttsRef = useRef<KokoroTTS | null>(null);
 	const buffersRef = useRef<(AudioBuffer | null)[]>([]);
 	const startedRef = useRef(false);
+	// Holds a reference to the live YT.Player for imperative seeking
+	const ytPlayerRef = useRef<YT.Player | null>(null);
+
+	const registerPlayer = useCallback((player: YT.Player | null) => {
+		ytPlayerRef.current = player;
+	}, []);
+
+	const seekPlayerTo = useCallback((seconds: number) => {
+		ytPlayerRef.current?.seekTo(seconds, true);
+	}, []);
 
 	const start = useCallback(async (segments: TranscriptSegment[]) => {
 		if (startedRef.current) return;
@@ -81,7 +96,7 @@ export function useTtsEngine(): UseTtsEngineReturn {
 			ttsRef.current = tts;
 
 			// 2. Get (or create) the AudioContext via the scheduler singleton.
-			//    This must happen in a user-gesture context — the caller (play button)
+			//    Must happen inside a user-gesture context — the caller (play button)
 			//    ensures we're inside a gesture when start() is invoked.
 			const scheduler = getAudioScheduler();
 
@@ -89,8 +104,7 @@ export function useTtsEngine(): UseTtsEngineReturn {
 
 			// 3. Generate audio for each segment sequentially.
 			//    Sequential keeps memory pressure low vs. firing all in parallel.
-			//    The scheduler will skip segments with null buffers, so partial
-			//    generation still produces partial audio output.
+			//    The scheduler skips null buffers, so partial generation still works.
 			for (let i = 0; i < segments.length; i++) {
 				const seg = segments[i];
 				if (!seg.text.trim()) {
@@ -145,6 +159,7 @@ export function useTtsEngine(): UseTtsEngineReturn {
 		await destroyAudioScheduler();
 		startedRef.current = false;
 		buffersRef.current = [];
+		ytPlayerRef.current = null;
 	}, []);
 
 	return {
@@ -155,6 +170,8 @@ export function useTtsEngine(): UseTtsEngineReturn {
 		error,
 		start,
 		reschedule,
+		seekPlayerTo,
+		registerPlayer,
 		suspend,
 		resume,
 		destroy,
