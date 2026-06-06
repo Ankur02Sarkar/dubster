@@ -11,8 +11,8 @@ AI video dubbing that runs entirely in your browser. Paste a YouTube URL — Dub
 | **Phase 1** | Layout (dark mode, Figtree, SEO/OG), landing page + URL form | ✅ Done |
 | **Phase 2** | Transcript proxy route, YouTube IFrame lib/hook, VideoPlayer, watch page RSC | ✅ Done |
 | **Phase 3** | Kokoro TTS lib, AudioScheduler, useTtsEngine hook, LoadingOverlay, TtsEngine wiring | ✅ Done |
-| **Phase 4** | TranscriptPanel with active-segment highlighting, click-to-seek | 🔲 Next |
-| **Phase 5** | Error states polish, mobile responsive layout, loading skeletons | 🔲 Pending |
+| **Phase 4** | TranscriptPanel (active highlight, auto-scroll, click-to-seek), WatchClient state shell | ✅ Done |
+| **Phase 5** | Error states polish, mobile responsive layout, loading skeletons | 🔲 Next |
 | **Phase 6** | Deploy to Cloudflare, OG image, production hardening | 🔲 Pending |
 
 ---
@@ -83,8 +83,10 @@ src/
 │   ├── ui/button.tsx            # shadcn Button
 │   ├── UrlForm.tsx              # URL input + videoId extraction (client)
 │   ├── VideoPlayer.tsx          # YouTube IFrame + seek detection (client)
-│   ├── TtsEngine.tsx            # Full dubbing pipeline orchestrator (client)
-│   └── LoadingOverlay.tsx       # Model download progress UI (client)
+│   ├── TtsEngine.tsx            # Full dubbing pipeline orchestrator (client, forwardRef)
+│   ├── LoadingOverlay.tsx       # Model download progress UI (client)
+│   ├── TranscriptPanel.tsx      # Active highlight, auto-scroll, click-to-seek (client)
+│   └── WatchClient.tsx          # Shared currentTime state shell (client)
 │
 ├── lib/
 │   ├── utils.ts                 # cn() helper

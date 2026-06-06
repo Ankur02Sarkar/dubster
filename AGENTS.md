@@ -5,6 +5,7 @@
 *Last updated: 2026-06-07 — Phase 1: layout.tsx fixed (dark mode, Figtree only, SEO/OG metadata), landing page built (UrlForm client component, hero, how-it-works section), UrlForm.tsx created*
 *Phase 2: transcript route.ts (nodejs runtime, full error codes), lib/youtube.ts (IFrame API loader), hooks/useYouTubePlayer.ts (100ms polling, seek detection), VideoPlayer.tsx (muted embed, state events), watch/[videoId]/page.tsx (server transcript fetch, transcript panel RSC), @types/youtube added to tsconfig*
 *Phase 3: kokoro-js installed, lib/tts.ts (Kokoro init + generateSegmentAudio, SharedArrayBuffer fix), lib/audio-scheduler.ts (AudioScheduler class + singleton, scheduleFrom/cancelAll/suspend/resume), hooks/useTtsEngine.ts (full pipeline state machine), LoadingOverlay.tsx (progress bar + error state), TtsEngine.tsx (orchestrator, wires VideoPlayer events to scheduler), watch page updated to use TtsEngine*
+*Phase 4: TranscriptPanel.tsx (active segment highlight via currentTime, smooth auto-scroll with user-scroll suppression, click-to-seek), WatchClient.tsx (client state shell owning currentTime, wires TtsEngine ref ↔ TranscriptPanel), TtsEngineHandle (forwardRef + useImperativeHandle seekTo), VideoPlayer onPlayerReady callback, useTtsEngine registerPlayer/seekPlayerTo, watch page delegated to WatchClient*
 
 ---
 
@@ -43,8 +44,9 @@ Dubster is a stateless web application where users paste a YouTube URL and recei
     │   │   └── 📄 button.tsx       ← shadcn Button (base-ui primitive + CVA variants)
     │   ├── 📄 UrlForm.tsx          ← URL input form (client component, videoId extraction, router.push)
     │   ├── 📄 VideoPlayer.tsx      ← YouTube IFrame + sync controller (muted, state events, seek detection)
-    │   ├── 📄 TtsEngine.tsx        ← Kokoro + AudioScheduler orchestrator (client component)
-    │   ├── 📄 TranscriptPanel.tsx  ← (PLANNED) Segment display, active highlighting
+    │   ├── 📄 TtsEngine.tsx        ← Kokoro + AudioScheduler orchestrator (client, forwardRef TtsEngineHandle)
+    │   ├── 📄 TranscriptPanel.tsx  ← Active segment highlight, auto-scroll, click-to-seek (client)
+    │   ├── 📄 WatchClient.tsx      ← Shared currentTime state shell, wires TtsEngine ↔ TranscriptPanel
     │   └── 📄 LoadingOverlay.tsx   ← Model download progress UI (progress bar + error state)
     │
     ├── 📁 lib/
