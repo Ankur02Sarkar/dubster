@@ -2,7 +2,7 @@
 
 > **CRITICAL:** Any AI agent working in this repository **MUST read this entire file before making any changes.** This file is the authoritative source of truth for architecture, conventions, constraints, and agent workflows.
 
-*Last updated: 2026-06-07 — Initial generation*
+*Last updated: 2026-06-07 — Phase 1: layout.tsx fixed (dark mode, Figtree only, SEO/OG metadata), landing page built (UrlForm client component, hero, how-it-works section), UrlForm.tsx created*
 
 ---
 
@@ -34,11 +34,12 @@ Dubster is a stateless web application where users paste a YouTube URL and recei
     │   ├── 📁 watch/[videoId]/
     │   │   └── 📄 page.tsx         ← (PLANNED) Watch page — video + dubbed audio
     │   └── 📁 api/transcript/
-    │       └── 📄 route.ts         ← (PLANNED) CF edge route: transcript proxy
+    │       └── 📄 route.ts         ← (PLANNED) CF Worker route: transcript proxy (runtime: nodejs)
     │
     ├── 📁 components/
     │   ├── 📁 ui/
     │   │   └── 📄 button.tsx       ← shadcn Button (base-ui primitive + CVA variants)
+    │   ├── 📄 UrlForm.tsx          ← URL input form (client component, videoId extraction, router.push)
     │   ├── 📄 VideoPlayer.tsx      ← (PLANNED) YouTube IFrame + sync controller
     │   ├── 📄 TtsEngine.tsx        ← (PLANNED) Kokoro loader + audio generator
     │   ├── 📄 TranscriptPanel.tsx  ← (PLANNED) Segment display, active highlighting
