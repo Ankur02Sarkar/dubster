@@ -147,32 +147,3 @@ function Header({ videoId }: { videoId?: string }) {
 		</header>
 	);
 }
-
-function formatTime(ms: number): string {
-	const totalSec = Math.floor(ms / 1000);
-	const m = Math.floor(totalSec / 60);
-	const s = totalSec % 60;
-	return `${m}:${s.toString().padStart(2, "0")}`;
-}
-
-function TranscriptSegmentRow({
-	segment,
-	index,
-}: {
-	segment: TranscriptSegment;
-	index: number;
-}) {
-	return (
-		<div
-			data-index={index}
-			className="flex gap-3 items-start px-2 py-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer group"
-		>
-			<span className="shrink-0 text-[11px] font-mono text-muted-foreground mt-0.5 w-10 text-right group-hover:text-primary transition-colors">
-				{formatTime(segment.offset)}
-			</span>
-			<p className="text-sm text-foreground/90 leading-snug flex-1">
-				{segment.text}
-			</p>
-		</div>
-	);
-}
