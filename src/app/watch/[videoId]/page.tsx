@@ -60,6 +60,18 @@ export async function generateMetadata({
 }
 
 // ---------------------------------------------------------------------------
+// Error hint copy — surfaced below the error message for specific codes
+// ---------------------------------------------------------------------------
+
+const ERROR_HINTS: Record<string, string> = {
+	DISABLED:       "The video owner has disabled captions. Try a video that has subtitles enabled.",
+	NO_CAPTIONS:    "No captions were found for this video. Dubster needs captions to generate dubbed audio. Try a video that has auto-generated or manual subtitles.",
+	NO_EN_CAPTIONS: "No English captions were found. Currently Dubster only supports English transcripts.",
+	UNAVAILABLE:    "This video may be private, age-restricted, or region-locked.",
+	RATE_LIMITED:   "YouTube is temporarily rate-limiting requests. Wait a minute then try again.",
+};
+
+// ---------------------------------------------------------------------------
 // Page
 // ---------------------------------------------------------------------------
 
@@ -74,23 +86,50 @@ export default async function WatchPage({
 
 	// Error state — transcript unavailable
 	if (!Array.isArray(result)) {
+		const hint = ERROR_HINTS[result.code ?? ""] ?? null;
 		return (
 			<div className="min-h-screen flex flex-col">
 				<Header />
-				<main className="flex-1 flex flex-col items-center justify-center gap-6 px-4 text-center">
-					<div className="size-16 rounded-full bg-destructive/10 flex items-center justify-center text-destructive text-2xl">
-						✕
+				<main className="flex-1 flex flex-col items-center justify-center gap-6 px-4 py-16 text-center">
+					{/* Icon */}
+					<div className="size-16 rounded-full bg-destructive/10 flex items-center justify-center">
+						<svg
+							width="28" height="28" viewBox="0 0 28 28" fill="none"
+							className="text-destructive" aria-hidden="true"
+						>
+							<circle cx="14" cy="14" r="13" stroke="currentColor" strokeWidth="1.5" />
+							<path d="M14 8v7M14 18.5v1" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+						</svg>
 					</div>
-					<div className="flex flex-col gap-2 max-w-md">
+
+					{/* Message */}
+					<div className="flex flex-col gap-2 max-w-sm">
 						<h1 className="text-xl font-semibold">Can&apos;t dub this video</h1>
-						<p className="text-muted-foreground text-sm">{result.error}</p>
+						<p className="text-muted-foreground text-sm leading-relaxed">{result.error}</p>
+						{hint && (
+							<p className="text-xs text-muted-foreground/70 bg-muted rounded-lg px-3 py-2 mt-1 leading-relaxed">
+								{hint}
+							</p>
+						)}
 					</div>
-					<Link
-						href="/"
-						className="text-primary text-sm underline underline-offset-4 hover:text-primary/80 transition-colors"
-					>
-						← Try another video
-					</Link>
+
+					{/* Actions */}
+					<div className="flex flex-col sm:flex-row items-center gap-3">
+						<Link
+							href="/"
+							className="inline-flex items-center gap-2 text-sm font-medium bg-primary text-primary-foreground px-4 py-2 rounded-lg hover:bg-primary/90 transition-colors"
+						>
+							← Try another video
+						</Link>
+						<a
+							href="https://www.youtube.com"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="text-xs text-muted-foreground hover:text-foreground transition-colors underline underline-offset-4"
+						>
+							Browse YouTube ↗
+						</a>
+					</div>
 				</main>
 			</div>
 		);
@@ -99,13 +138,13 @@ export default async function WatchPage({
 	const segments = result;
 
 	return (
-		<div className="min-h-screen flex flex-col">
+		<div className="h-screen flex flex-col overflow-hidden">
 			<Header videoId={videoId} />
 
-			<main className="flex-1 flex flex-col lg:flex-row gap-0 overflow-hidden" style={{ height: "calc(100vh - 49px)" }}>
+			<main className="flex-1 flex flex-col lg:flex-row min-h-0 overflow-hidden">
 				{/*
-				 * WatchClient is the client shell that owns shared currentTime state
-				 * and wires TtsEngine ↔ TranscriptPanel together.
+				 * WatchClient is the client shell that owns shared currentTime + ttsStatus
+				 * state and wires TtsEngine ↔ TranscriptPanel together.
 				 */}
 				<WatchClient videoId={videoId} segments={segments} />
 			</main>

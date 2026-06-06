@@ -17,6 +17,8 @@ interface TtsEngineProps {
 	segments: TranscriptSegment[];
 	/** Called on every 100ms time poll — use to sync TranscriptPanel */
 	onTimeUpdate?: (currentTimeSeconds: number) => void;
+	/** Called whenever the TTS pipeline status changes */
+	onStatusChange?: (status: import("@/hooks/useTtsEngine").TtsStatus) => void;
 	className?: string;
 }
 
@@ -29,7 +31,7 @@ interface TtsEngineProps {
  * Exposes a `TtsEngineHandle` ref so the parent can imperatively seek.
  */
 export const TtsEngine = forwardRef<TtsEngineHandle, TtsEngineProps>(
-	function TtsEngine({ videoId, segments, onTimeUpdate, className }, ref) {
+	function TtsEngine({ videoId, segments, onTimeUpdate, onStatusChange, className }, ref) {
 	const {
 		status,
 		loadProgress,
@@ -51,6 +53,11 @@ export const TtsEngine = forwardRef<TtsEngineHandle, TtsEngineProps>(
 				void destroy();
 			};
 		}, [destroy]);
+
+		// Bubble status changes up to the parent
+		useEffect(() => {
+			onStatusChange?.(status);
+		}, [status, onStatusChange]);
 
 		// Expose seekTo imperatively so the parent (WatchClient) can call it
 		// from TranscriptPanel click events.
