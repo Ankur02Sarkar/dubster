@@ -4,6 +4,7 @@
 
 *Last updated: 2026-06-07 — Phase 1: layout.tsx fixed (dark mode, Figtree only, SEO/OG metadata), landing page built (UrlForm client component, hero, how-it-works section), UrlForm.tsx created*
 *Phase 2: transcript route.ts (nodejs runtime, full error codes), lib/youtube.ts (IFrame API loader), hooks/useYouTubePlayer.ts (100ms polling, seek detection), VideoPlayer.tsx (muted embed, state events), watch/[videoId]/page.tsx (server transcript fetch, transcript panel RSC), @types/youtube added to tsconfig*
+*Phase 3: kokoro-js installed, lib/tts.ts (Kokoro init + generateSegmentAudio, SharedArrayBuffer fix), lib/audio-scheduler.ts (AudioScheduler class + singleton, scheduleFrom/cancelAll/suspend/resume), hooks/useTtsEngine.ts (full pipeline state machine), LoadingOverlay.tsx (progress bar + error state), TtsEngine.tsx (orchestrator, wires VideoPlayer events to scheduler), watch page updated to use TtsEngine*
 
 ---
 
@@ -42,19 +43,19 @@ Dubster is a stateless web application where users paste a YouTube URL and recei
     │   │   └── 📄 button.tsx       ← shadcn Button (base-ui primitive + CVA variants)
     │   ├── 📄 UrlForm.tsx          ← URL input form (client component, videoId extraction, router.push)
     │   ├── 📄 VideoPlayer.tsx      ← YouTube IFrame + sync controller (muted, state events, seek detection)
-    │   ├── 📄 TtsEngine.tsx        ← (PLANNED) Kokoro loader + audio generator
+    │   ├── 📄 TtsEngine.tsx        ← Kokoro + AudioScheduler orchestrator (client component)
     │   ├── 📄 TranscriptPanel.tsx  ← (PLANNED) Segment display, active highlighting
-    │   └── 📄 LoadingOverlay.tsx   ← (PLANNED) Model download progress UI
+    │   └── 📄 LoadingOverlay.tsx   ← Model download progress UI (progress bar + error state)
     │
     ├── 📁 lib/
     │   ├── 📄 utils.ts             ← cn() helper (clsx + tailwind-merge)
-    │   ├── 📄 tts.ts               ← (PLANNED) Kokoro init + generate()
-    │   ├── 📄 audio-scheduler.ts   ← (PLANNED) Web Audio API scheduling logic
+    │   ├── 📄 tts.ts               ← Kokoro init + generate()
+    │   ├── 📄 audio-scheduler.ts   ← AudioScheduler class + singleton, scheduleFrom/cancelAll/suspend/resume
     │   └── 📄 youtube.ts           ← IFrame API loader + createYTPlayer() wrapper
     │
     └── 📁 hooks/
         ├── 📄 useYouTubePlayer.ts  ← IFrame API state/events hook (100ms polling, seek detection)
-        └── 📄 useTtsEngine.ts      ← (PLANNED) Kokoro loading + generation hook
+        └── 📄 useTtsEngine.ts      ← full pipeline state machine (load → generate → schedule)
 ```
 
 > **Note:** Files marked `(PLANNED)` are architecture targets — they do not yet exist. Create them at these exact paths when implementing features.
