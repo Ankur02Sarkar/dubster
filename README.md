@@ -13,7 +13,7 @@ AI video dubbing that runs entirely in your browser. Paste a YouTube URL — Dub
 | **Phase 3** | Kokoro TTS lib, AudioScheduler, useTtsEngine hook, LoadingOverlay, TtsEngine wiring | ✅ Done |
 | **Phase 4** | TranscriptPanel (active highlight, auto-scroll, click-to-seek), WatchClient state shell | ✅ Done |
 | **Phase 5** | Error states (per-code hints), mobile drawer transcript, dynamic info bar, viewport layout | ✅ Done |
-| **Phase 6** | Deploy to Cloudflare, OG image, production hardening | 🔲 Next |
+| **Phase 6** | OG image, security headers, error boundary, CF Workers bundle fix, `npm run preview` passing | ✅ Done |
 
 ---
 
@@ -86,7 +86,8 @@ src/
 │   ├── TtsEngine.tsx            # Full dubbing pipeline orchestrator (client, forwardRef)
 │   ├── LoadingOverlay.tsx       # Model download progress UI (client)
 │   ├── TranscriptPanel.tsx      # Active highlight, auto-scroll, click-to-seek (client)
-│   └── WatchClient.tsx          # Shared currentTime state shell (client)
+│   ├── WatchClient.tsx          # Shared currentTime state shell (client)
+│   └── WatchClientLoader.tsx    # Dynamic import wrapper breaking NFT trace (client)
 │
 ├── lib/
 │   ├── utils.ts                 # cn() helper

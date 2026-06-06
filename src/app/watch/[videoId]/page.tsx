@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { WatchClient } from "@/components/WatchClient";
+import { WatchClientLoader } from "@/components/WatchClientLoader";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -146,7 +146,7 @@ export default async function WatchPage({
 				 * WatchClient is the client shell that owns shared currentTime + ttsStatus
 				 * state and wires TtsEngine ↔ TranscriptPanel together.
 				 */}
-				<WatchClient videoId={videoId} segments={segments} />
+				<WatchClientLoader videoId={videoId} segments={segments} />
 			</main>
 		</div>
 	);

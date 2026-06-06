@@ -1,10 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-	// These packages contain native .node binaries or browser-only WASM that
-	// must NOT be bundled into the CF Workers server function.
-	// kokoro-js / onnxruntime-web / onnxruntime-node are client-only (browser).
-	// Marking them external prevents the bundler from touching them server-side.
+	// kokoro-js and onnxruntime packages are browser-only (WebGPU/WASM).
+	// They are loaded via next/dynamic ssr:false so the NFT tracer never
+	// follows them into the server bundle. Listing them here as an extra
+	// safety net prevents any accidental server-side import from being bundled.
 	serverExternalPackages: [
 		"kokoro-js",
 		"onnxruntime-web",
