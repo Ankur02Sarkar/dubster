@@ -27,7 +27,7 @@ async function fetchTranscript(videoId: string): Promise<TranscriptSegment[] | T
 		process.env.NEXT_PUBLIC_BASE_URL ??
 		(process.env.NODE_ENV === "development"
 			? "http://localhost:3000"
-			: "https://dubster.app");
+			: "https://dubster.ankur.codes");
 
 	const res = await fetch(`${base}/api/transcript?videoId=${videoId}`, {
 		// Revalidate transcript cache every hour

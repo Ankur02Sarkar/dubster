@@ -34,7 +34,7 @@
 	// Production environment variables
 	// NOTE: Never put secrets here — use `wrangler secret put` for those
 	"vars": {
-		"NEXT_PUBLIC_BASE_URL": "https://dubster.app"
+		"NEXT_PUBLIC_BASE_URL": "https://dubster.ankur.codes"
 	},
 
 	// Smart placement: Cloudflare picks the data-centre closest to the origin

@@ -9,7 +9,7 @@ const figtree = Figtree({
 	display: "swap",
 });
 
-const BASE_URL = "https://dubster.app";
+const BASE_URL = "https://dubster.ankur.codes";
 const TITLE = "Dubster — AI Video Dubbing in Your Browser";
 const DESCRIPTION =
 	"Paste any YouTube URL and hear it dubbed in real-time by an AI voice — entirely in your browser. No account needed. Free forever.";
