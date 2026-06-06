@@ -3,6 +3,7 @@
 > **CRITICAL:** Any AI agent working in this repository **MUST read this entire file before making any changes.** This file is the authoritative source of truth for architecture, conventions, constraints, and agent workflows.
 
 *Last updated: 2026-06-07 — Phase 1: layout.tsx fixed (dark mode, Figtree only, SEO/OG metadata), landing page built (UrlForm client component, hero, how-it-works section), UrlForm.tsx created*
+*Phase 2: transcript route.ts (nodejs runtime, full error codes), lib/youtube.ts (IFrame API loader), hooks/useYouTubePlayer.ts (100ms polling, seek detection), VideoPlayer.tsx (muted embed, state events), watch/[videoId]/page.tsx (server transcript fetch, transcript panel RSC), @types/youtube added to tsconfig*
 
 ---
 
@@ -32,15 +33,15 @@ Dubster is a stateless web application where users paste a YouTube URL and recei
     │   ├── 📄 layout.tsx           ← Root layout (font loading, dark class)
     │   ├── 📄 page.tsx             ← Landing page — YouTube URL input form
     │   ├── 📁 watch/[videoId]/
-    │   │   └── 📄 page.tsx         ← (PLANNED) Watch page — video + dubbed audio
+    │   │   └── 📄 page.tsx         ← Watch page — server transcript fetch, transcript panel RSC
     │   └── 📁 api/transcript/
-    │       └── 📄 route.ts         ← (PLANNED) CF Worker route: transcript proxy (runtime: nodejs)
+    │       └── 📄 route.ts         ← CF Worker route: transcript proxy (runtime: nodejs)
     │
     ├── 📁 components/
     │   ├── 📁 ui/
     │   │   └── 📄 button.tsx       ← shadcn Button (base-ui primitive + CVA variants)
     │   ├── 📄 UrlForm.tsx          ← URL input form (client component, videoId extraction, router.push)
-    │   ├── 📄 VideoPlayer.tsx      ← (PLANNED) YouTube IFrame + sync controller
+    │   ├── 📄 VideoPlayer.tsx      ← YouTube IFrame + sync controller (muted, state events, seek detection)
     │   ├── 📄 TtsEngine.tsx        ← (PLANNED) Kokoro loader + audio generator
     │   ├── 📄 TranscriptPanel.tsx  ← (PLANNED) Segment display, active highlighting
     │   └── 📄 LoadingOverlay.tsx   ← (PLANNED) Model download progress UI
@@ -49,10 +50,10 @@ Dubster is a stateless web application where users paste a YouTube URL and recei
     │   ├── 📄 utils.ts             ← cn() helper (clsx + tailwind-merge)
     │   ├── 📄 tts.ts               ← (PLANNED) Kokoro init + generate()
     │   ├── 📄 audio-scheduler.ts   ← (PLANNED) Web Audio API scheduling logic
-    │   └── 📄 youtube.ts           ← (PLANNED) IFrame API wrapper + event helpers
+    │   └── 📄 youtube.ts           ← IFrame API loader + createYTPlayer() wrapper
     │
     └── 📁 hooks/
-        ├── 📄 useYouTubePlayer.ts  ← (PLANNED) IFrame API state/events hook
+        ├── 📄 useYouTubePlayer.ts  ← IFrame API state/events hook (100ms polling, seek detection)
         └── 📄 useTtsEngine.ts      ← (PLANNED) Kokoro loading + generation hook
 ```
 

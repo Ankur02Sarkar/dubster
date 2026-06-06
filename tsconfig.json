@@ -23,7 +23,8 @@
 		},
 		"types": [
 			"./cloudflare-env.d.ts",
-			"node"
+			"node",
+			"youtube"
 		]
 	},
 	"include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", ".next/dev/types/**/*.ts"],
