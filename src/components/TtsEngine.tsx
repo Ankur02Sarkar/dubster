@@ -2,136 +2,131 @@
 
 import { useEffect, useCallback, useImperativeHandle, forwardRef } from "react";
 import { useTtsEngine } from "@/hooks/useTtsEngine";
-import { LoadingOverlay } from "@/components/LoadingOverlay";
 import { VideoPlayer } from "@/components/VideoPlayer";
 import { cn } from "@/lib/utils";
 import type { TranscriptSegment } from "@/app/watch/[videoId]/page";
+import type { TtsStatus } from "@/hooks/useTtsEngine";
 
 export interface TtsEngineHandle {
-	/** Seek the YouTube player to the given time and reschedule audio */
+	/** Seek the YouTube player and reschedule audio from the new position */
 	seekTo: (seconds: number) => void;
 }
 
 interface TtsEngineProps {
 	videoId: string;
 	segments: TranscriptSegment[];
-	/** Called on every 100ms time poll — use to sync TranscriptPanel */
+	/** Called on every 100ms time poll — drives TranscriptPanel highlight */
 	onTimeUpdate?: (currentTimeSeconds: number) => void;
-	/** Called whenever the TTS pipeline status changes */
-	onStatusChange?: (status: import("@/hooks/useTtsEngine").TtsStatus) => void;
+	/** Called whenever TTS pipeline status changes */
+	onStatusChange?: (status: TtsStatus) => void;
 	className?: string;
 }
 
 /**
  * Orchestrates the full dubbing pipeline:
- * - Renders the muted YouTube IFrame (VideoPlayer)
- * - Shows LoadingOverlay while the Kokoro model downloads / audio generates
- * - Wires VideoPlayer play/pause/seek events to the AudioScheduler
- *
- * Exposes a `TtsEngineHandle` ref so the parent can imperatively seek.
+ * 1. On mount: auto-starts model download + background generation (no gesture needed)
+ * 2. Keeps the YouTube player disabled until the first PRIME_COUNT segments are ready
+ * 3. On play: resumes AudioContext (gesture) + schedules available audio
+ * 4. On seek: reprioritises background generation + reschedules audio
+ * 5. Continues generating remaining segments in background while video plays
  */
 export const TtsEngine = forwardRef<TtsEngineHandle, TtsEngineProps>(
 	function TtsEngine({ videoId, segments, onTimeUpdate, onStatusChange, className }, ref) {
-	const {
-		status,
-		loadProgress,
-		generatedCount,
-		totalCount,
-		error,
-		start,
-		reschedule,
-		seekPlayerTo,
-		registerPlayer,
-		suspend,
-		resume,
-		destroy,
-	} = useTtsEngine();
+		const {
+			status,
+			isPlayable,
+			error,
+			autoStart,
+			play,
+			suspend,
+			resume,
+			seekTo,
+			registerPlayer,
+			seekPlayerTo,
+			destroy,
+			loadProgress,
+			primingCount,
+			generatedCount,
+			totalCount,
+		} = useTtsEngine();
 
-		// Tear down the AudioContext when the component unmounts (route change)
-		useEffect(() => {
-			return () => {
-				void destroy();
-			};
-		}, [destroy]);
+		// Kick off model download + generation immediately — no gesture needed.
+		// eslint-disable-next-line react-hooks/exhaustive-deps
+		useEffect(() => { autoStart(segments); }, []);
 
-		// Bubble status changes up to the parent
-		useEffect(() => {
-			onStatusChange?.(status);
-		}, [status, onStatusChange]);
+		// Tear down AudioContext on unmount
+		useEffect(() => () => { void destroy(); }, [destroy]);
 
-		// Expose seekTo imperatively so the parent (WatchClient) can call it
-		// from TranscriptPanel click events.
-		useImperativeHandle(
-			ref,
-			() => ({
-				seekTo(seconds: number) {
-					seekPlayerTo(seconds);
-					reschedule(seconds, segments);
-				},
-			}),
-			[seekPlayerTo, reschedule, segments],
-		);
+		// Bubble status up to WatchClient for the info bar
+		useEffect(() => { onStatusChange?.(status); }, [status, onStatusChange]);
 
-		// -------------------------------------------------------------------------
+		// Expose seekTo handle so WatchClient / TranscriptPanel can call it
+		useImperativeHandle(ref, () => ({
+			seekTo(seconds: number) {
+				seekPlayerTo(seconds);
+				seekTo(seconds, segments);
+			},
+		}), [seekPlayerTo, seekTo, segments]);
+
+		// -----------------------------------------------------------------------
 		// VideoPlayer event handlers
-		// -------------------------------------------------------------------------
+		// -----------------------------------------------------------------------
+
+		const handleTimeUpdate = useCallback((t: number) => {
+			onTimeUpdate?.(t);
+		}, [onTimeUpdate]);
 
 		const handlePlay = useCallback(async () => {
-			if (status === "idle") {
-				// First play — kick off model load + audio generation.
-				// Must be inside a user-gesture (play button click) for AudioContext.
-				await start(segments);
-			} else if (status === "ready" || status === "generating") {
-				await resume();
-			}
-		}, [status, start, segments, resume]);
+			if (!isPlayable) return; // still priming — shouldn't happen since player is disabled
+			const currentTime = segments.length > 0 ? 0 : 0; // scheduler reads ytPlayer time via ref
+			await play(currentTime, segments);
+		}, [isPlayable, play, segments]);
 
 		const handlePause = useCallback(async () => {
 			await suspend();
 		}, [suspend]);
 
-		const handleSeek = useCallback(
-			(newTimeSeconds: number) => {
-				if (status === "ready" || status === "generating") {
-					reschedule(newTimeSeconds, segments);
-				}
-			},
-			[status, reschedule, segments],
-		);
+		const handleSeek = useCallback((newTimeSeconds: number) => {
+			seekTo(newTimeSeconds, segments);
+		}, [seekTo, segments]);
 
 		const handleEnded = useCallback(async () => {
 			await suspend();
 		}, [suspend]);
 
-		const handleRetry = useCallback(() => {
-			void start(segments);
-		}, [start, segments]);
+		const handleResume = useCallback(async () => {
+			await resume();
+		}, [resume]);
 
-		// -------------------------------------------------------------------------
-		// Render
-		// -------------------------------------------------------------------------
+		// -----------------------------------------------------------------------
+		// Derive overlay state for the video disabled chip
+		// -----------------------------------------------------------------------
+
+		const overlayState: "loading" | "priming" | "error" | null =
+			status === "error"   ? "error"   :
+			status === "loading" ? "loading" :
+			status === "priming" ? "priming" :
+			null;
 
 		return (
 			<div className={cn("relative w-full", className)}>
 				<VideoPlayer
 					videoId={videoId}
-					onTimeUpdate={onTimeUpdate}
+					disabled={!isPlayable}
+					overlayState={overlayState}
+					loadProgress={loadProgress}
+					primingCount={primingCount}
+					primingTotal={Math.min(5, segments.length)}
+					generatedCount={generatedCount}
+					totalCount={totalCount}
+					errorMessage={error}
+					onTimeUpdate={handleTimeUpdate}
 					onPlayerReady={registerPlayer}
 					onPlay={() => void handlePlay()}
 					onPause={() => void handlePause()}
+					onResume={() => void handleResume()}
 					onSeek={handleSeek}
 					onEnded={() => void handleEnded()}
-				/>
-
-				{/* Overlay rendered on top of the video while loading/generating */}
-				<LoadingOverlay
-					status={status}
-					loadProgress={loadProgress}
-					generatedCount={generatedCount}
-					totalCount={totalCount}
-					error={error}
-					onRetry={handleRetry}
-					className="rounded-xl"
 				/>
 			</div>
 		);
