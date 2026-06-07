@@ -14,6 +14,7 @@ AI video dubbing that runs entirely in your browser. Paste a YouTube URL — Dub
 | **Phase 4** | TranscriptPanel (active highlight, auto-scroll, click-to-seek), WatchClient state shell | ✅ Done |
 | **Phase 5** | Error states (per-code hints), mobile drawer transcript, dynamic info bar, viewport layout | ✅ Done |
 | **Phase 6** | OG image, security headers, error boundary, CF Workers bundle fix, `npm run preview` passing | ✅ Done |
+| **Post-P6** | Font → Outfit, full TTS lifecycle rewrite (autoStart, priming, background gen, seek reprioritisation) | ✅ Done |
 
 ---
 

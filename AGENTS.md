@@ -8,6 +8,7 @@
 *Phase 4: TranscriptPanel.tsx (active segment highlight via currentTime, smooth auto-scroll with user-scroll suppression, click-to-seek), WatchClient.tsx (client state shell owning currentTime, wires TtsEngine ref ↔ TranscriptPanel), TtsEngineHandle (forwardRef + useImperativeHandle seekTo), VideoPlayer onPlayerReady callback, useTtsEngine registerPlayer/seekPlayerTo, watch page delegated to WatchClient*
 *Phase 5: Error states polished (per-code hints for DISABLED/NO_CAPTIONS/NO_EN_CAPTIONS/UNAVAILABLE/RATE_LIMITED, icon SVG, primary CTA button), mobile-responsive watch page (transcript as bottom-drawer on mobile, backdrop, drag handle, auto-close on seek), dynamic info bar (STATUS_LABEL/STATUS_DOT maps, live TtsStatus bubbled via onStatusChange), viewport-filling layout (h-screen, min-h-0 overflow-hidden chain)*
 *Phase 6: OG image generated (sharp SVG→PNG), wrangler.jsonc production vars + smart placement, security/cache headers in _headers, error.tsx + not-found.tsx, WatchClientLoader (next/dynamic ssr:false in client component to break NFT trace for onnxruntime-node), serverExternalPackages in next.config.ts, npm run preview passing on CF Workers runtime*
+*Post-Phase 6: Font → Outfit (layout.tsx + globals.css 3 places). Full TTS lifecycle rewrite: autoStart on mount (no gesture), priming first 5 segments, isPlayable gate on YT player controls, background generation with seek reprioritisation (seekTargetRef jump-to-nearest), progressive scheduleOne() after each segment, VideoPlayer disabled overlay chips (loading/priming/error + generating badge), LoadingOverlay.tsx deleted, new TtsStatus: idle/loading/priming/playable/generating/ready/error*
 
 ---
 
@@ -49,8 +50,7 @@ Dubster is a stateless web application where users paste a YouTube URL and recei
     │   ├── 📄 TtsEngine.tsx        ← Kokoro + AudioScheduler orchestrator (client, forwardRef TtsEngineHandle)
     │   ├── 📄 TranscriptPanel.tsx  ← Active segment highlight, auto-scroll, click-to-seek (client)
     │   ├── 📄 WatchClient.tsx      ← Shared currentTime state shell, wires TtsEngine ↔ TranscriptPanel
-    │   ├── 📄 WatchClientLoader.tsx ← next/dynamic ssr:false wrapper (breaks NFT trace for onnxruntime-node)
-    │   └── 📄 LoadingOverlay.tsx   ← Model download progress UI (progress bar + error state)
+    │   └── 📄 WatchClientLoader.tsx ← next/dynamic ssr:false wrapper (breaks NFT trace for onnxruntime-node)
     │
     ├── 📁 lib/
     │   ├── 📄 utils.ts             ← cn() helper (clsx + tailwind-merge)
