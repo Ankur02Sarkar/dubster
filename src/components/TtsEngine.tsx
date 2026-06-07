@@ -41,6 +41,7 @@ export const TtsEngine = forwardRef<TtsEngineHandle, TtsEngineProps>(
 			suspend,
 			resume,
 			seekTo,
+			updateCurrentTime,
 			registerPlayer,
 			seekPlayerTo,
 			destroy,
@@ -73,13 +74,15 @@ export const TtsEngine = forwardRef<TtsEngineHandle, TtsEngineProps>(
 		// -----------------------------------------------------------------------
 
 		const handleTimeUpdate = useCallback((t: number) => {
+			updateCurrentTime(t);
 			onTimeUpdate?.(t);
-		}, [onTimeUpdate]);
+		}, [updateCurrentTime, onTimeUpdate]);
 
 		const handlePlay = useCallback(async () => {
-			if (!isPlayable) return; // still priming — shouldn't happen since player is disabled
-			const currentTime = segments.length > 0 ? 0 : 0; // scheduler reads ytPlayer time via ref
-			await play(currentTime, segments);
+			if (!isPlayable) return;
+			// Pass 0 — play() internally uses currentVideoTimeRef which was updated
+			// by the last onTimeUpdate tick (or 0 if video hasn't played yet).
+			await play(0, segments);
 		}, [isPlayable, play, segments]);
 
 		const handlePause = useCallback(async () => {
@@ -94,9 +97,8 @@ export const TtsEngine = forwardRef<TtsEngineHandle, TtsEngineProps>(
 			await suspend();
 		}, [suspend]);
 
-		const handleResume = useCallback(async () => {
-			await resume();
-		}, [resume]);
+		// resume() is called implicitly via handlePlay when the user unpauses.
+		// (YT fires onPlay on both initial play and resume-after-pause.)
 
 		// -----------------------------------------------------------------------
 		// Derive overlay state for the video disabled chip
@@ -124,8 +126,7 @@ export const TtsEngine = forwardRef<TtsEngineHandle, TtsEngineProps>(
 					onPlayerReady={registerPlayer}
 					onPlay={() => void handlePlay()}
 					onPause={() => void handlePause()}
-					onResume={() => void handleResume()}
-					onSeek={handleSeek}
+				onSeek={handleSeek}
 					onEnded={() => void handleEnded()}
 				/>
 			</div>

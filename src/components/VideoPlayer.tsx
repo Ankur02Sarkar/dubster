@@ -36,7 +36,6 @@ export interface VideoPlayerProps {
 	onTimeUpdate?: (currentTimeSeconds: number) => void;
 	onPlay?: () => void;
 	onPause?: () => void;
-	onResume?: () => void;
 	onEnded?: () => void;
 	onSeek?: (newTimeSeconds: number) => void;
 	onPlayerReady?: (player: YT.Player) => void;
@@ -56,7 +55,6 @@ export function VideoPlayer({
 	onTimeUpdate,
 	onPlay,
 	onPause,
-	onResume,
 	onSeek,
 	onEnded,
 	onPlayerReady,
@@ -98,7 +96,7 @@ export function VideoPlayer({
 		} else if (playerState === YT_ENDED) {
 			onEnded?.();
 		}
-	}, [playerState, onPlay, onPause, onResume, onEnded, playerRef]);
+	}, [playerState, onPlay, onPause, onEnded, playerRef]);
 
 	return (
 		<div className={cn("relative w-full aspect-video rounded-xl overflow-hidden bg-black", className)}>

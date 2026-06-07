@@ -123,17 +123,21 @@ export function WatchClient({ videoId, segments }: WatchClientProps) {
 // ---------------------------------------------------------------------------
 
 const STATUS_LABEL: Record<TtsStatus, string> = {
-	idle:       "Press play to load the AI voice",
-	loading:    "Downloading voice model (~92 MB, cached after first use)…",
-	generating: "Generating dubbed audio…",
-	ready:      "AI voice ready · dubbing in sync",
+	idle:       "Initialising voice engine…",
+	loading:    "Downloading voice model (~92 MB, cached after first visit)…",
+	priming:    "Preparing dubbed audio — almost ready…",
+	playable:   "Ready · press play to start dubbing",
+	generating: "Dubbing in progress · more audio generating in the background",
+	ready:      "Fully dubbed · all segments ready",
 	error:      "Voice engine encountered an error",
 };
 
 const STATUS_DOT: Record<TtsStatus, string> = {
-	idle:       "bg-muted-foreground",
+	idle:       "bg-muted-foreground animate-pulse",
 	loading:    "bg-primary animate-pulse",
-	generating: "bg-accent animate-pulse",
+	priming:    "bg-accent animate-pulse",
+	playable:   "bg-primary",
+	generating: "bg-primary animate-pulse",
 	ready:      "bg-primary",
 	error:      "bg-destructive",
 };
