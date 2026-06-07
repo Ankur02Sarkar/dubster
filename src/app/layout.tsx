@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { Figtree } from "next/font/google";
+import { Outfit } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
-const figtree = Figtree({
+const outfit = Outfit({
 	subsets: ["latin"],
 	variable: "--font-sans",
 	display: "swap",
@@ -79,7 +79,7 @@ export default function RootLayout({
 	children: React.ReactNode;
 }>) {
 	return (
-		<html lang="en" className={cn("dark font-sans", figtree.variable)}>
+		<html lang="en" className={cn("dark font-sans", outfit.variable)}>
 			<head />
 			<body className="antialiased">{children}</body>
 		</html>

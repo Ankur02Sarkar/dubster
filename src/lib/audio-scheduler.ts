@@ -8,6 +8,8 @@
  * - Segments are scheduled at `AudioContext.currentTime + (segment.offset/1000 - videoCurrentTime)`.
  * - On seek: all pending sources are stopped and the scheduler re-runs from the new position.
  * - No speed-stretching — TTS audio plays at natural rate; gaps between segments are silence.
+ * - Progressive scheduling: as each buffer is generated it can be scheduled immediately via
+ *   scheduleOne(), without needing to cancel+reschedule everything.
  */
 
 import type { TranscriptSegment } from "@/app/watch/[videoId]/page";
@@ -19,12 +21,14 @@ const MIN_SCHEDULE_DELAY_S = 0.01;
 interface ScheduledSource {
 	source: AudioBufferSourceNode;
 	segmentIndex: number;
-	scheduledAt: number; // AudioContext.currentTime when .start() was called
 }
 
 export class AudioScheduler {
 	private ctx: AudioContext;
 	private scheduled: ScheduledSource[] = [];
+	// Tracks which segment indices have already been scheduled so we
+	// don't double-schedule when calling scheduleOne() incrementally.
+	private scheduledIndices: Set<number> = new Set();
 
 	constructor(ctx: AudioContext) {
 		this.ctx = ctx;
@@ -35,12 +39,9 @@ export class AudioScheduler {
 	}
 
 	/**
-	 * Schedules all segments whose offset is at or after `videoCurrentTimeSeconds`.
-	 * Each segment is fired as an independent AudioBufferSourceNode.
-	 *
-	 * @param segments   Full transcript segment array
-	 * @param buffers    Parallel array of AudioBuffers (null if not yet generated)
-	 * @param videoCurrentTimeSeconds  The video's current playback position
+	 * Schedules ALL available (non-null) segments from `videoCurrentTimeSeconds` onward.
+	 * Skips any index already in scheduledIndices.
+	 * Call this after a seek or on initial play.
 	 */
 	scheduleFrom(
 		segments: TranscriptSegment[],
@@ -50,9 +51,10 @@ export class AudioScheduler {
 		const now = this.ctx.currentTime;
 
 		for (let i = 0; i < segments.length; i++) {
+			if (this.scheduledIndices.has(i)) continue;
 			const seg = segments[i];
 			const buf = buffers[i];
-			if (!buf) continue; // not yet generated — skip
+			if (!buf) continue;
 
 			const segStartS = seg.offset / 1000;
 			const delayS = segStartS - videoCurrentTimeSeconds;
@@ -60,19 +62,49 @@ export class AudioScheduler {
 			// Skip segments already fully in the past
 			if (delayS < -(seg.duration / 1000)) continue;
 
-			const startAt = now + Math.max(MIN_SCHEDULE_DELAY_S, delayS);
-
-			const source = this.ctx.createBufferSource();
-			source.buffer = buf;
-			source.connect(this.ctx.destination);
-			source.start(startAt);
-
-			this.scheduled.push({ source, segmentIndex: i, scheduledAt: startAt });
+			this._scheduleBuffer(buf, i, now + Math.max(MIN_SCHEDULE_DELAY_S, delayS));
 		}
 	}
 
 	/**
-	 * Stops and disconnects all pending scheduled sources.
+	 * Schedules a single newly-generated segment immediately, if:
+	 * - it hasn't been scheduled yet
+	 * - it's not fully in the past
+	 * - the AudioContext is running (i.e. video is playing)
+	 *
+	 * Call this from the background generation loop each time a new buffer
+	 * becomes available to give the user dubbed audio progressively.
+	 */
+	scheduleOne(
+		index: number,
+		segment: TranscriptSegment,
+		buffer: AudioBuffer,
+		videoCurrentTimeSeconds: number,
+	): void {
+		if (this.scheduledIndices.has(index)) return;
+		if (this.ctx.state !== "running") return;
+
+		const now = this.ctx.currentTime;
+		const segStartS = segment.offset / 1000;
+		const delayS = segStartS - videoCurrentTimeSeconds;
+
+		// Only schedule if not fully in the past
+		if (delayS < -(segment.duration / 1000)) return;
+
+		this._scheduleBuffer(buffer, index, now + Math.max(MIN_SCHEDULE_DELAY_S, delayS));
+	}
+
+	private _scheduleBuffer(buffer: AudioBuffer, index: number, startAt: number): void {
+		const source = this.ctx.createBufferSource();
+		source.buffer = buffer;
+		source.connect(this.ctx.destination);
+		source.start(startAt);
+		this.scheduled.push({ source, segmentIndex: index });
+		this.scheduledIndices.add(index);
+	}
+
+	/**
+	 * Stops and disconnects all pending scheduled sources, clears tracking.
 	 * Must be called on every seek event before calling scheduleFrom() again.
 	 */
 	cancelAll(): void {
@@ -80,11 +112,12 @@ export class AudioScheduler {
 			try {
 				source.stop();
 			} catch {
-				// stop() throws if the source was never started or already finished — ignore
+				// stop() throws if the source was never started or already finished
 			}
 			source.disconnect();
 		}
 		this.scheduled = [];
+		this.scheduledIndices.clear();
 	}
 
 	/**
@@ -107,7 +140,6 @@ export class AudioScheduler {
 		}
 	}
 
-	/** Number of currently scheduled (pending or playing) sources */
 	get scheduledCount(): number {
 		return this.scheduled.length;
 	}
@@ -116,14 +148,12 @@ export class AudioScheduler {
 // ---------------------------------------------------------------------------
 // Singleton management
 // ---------------------------------------------------------------------------
-// One AudioContext per page — browsers enforce a limit and garbage-collect extras.
-// The context is created lazily on the first user gesture (browsers require this).
 
 let _scheduler: AudioScheduler | null = null;
 
 /**
  * Returns the shared AudioScheduler, creating the AudioContext on first call.
- * Must be called from a user-gesture handler (click, keydown, etc.).
+ * The AudioContext starts suspended — call scheduler.resume() inside a user gesture.
  */
 export function getAudioScheduler(): AudioScheduler {
 	if (!_scheduler) {
